@@ -56,7 +56,7 @@ class MyDataScaler():
             print "Error loading csv file: "+fname+".csv"
             print err
 
-    def save_csv(self, fname):
+    def save_csv(self, fname=None):
         # save data, handle if any errors occur
         try:
             myCSV = MyCSVLogger('',fname)
@@ -64,9 +64,9 @@ class MyDataScaler():
             for thisEntry in self.mergedData:
                 myCSV.save(thisEntry)
             myCSV.close()
-            print "Saved csv file: "+fname+".csv"
+            print "Saved csv file: "+myCSV.fname+".csv"
         except Exception, err:
-            print "Error saving CSV file: "+fname+".csv"
+            print "Error saving CSV file: "+myCSV.fname+".csv"
             print err
 
     def save_libsvm(self, fname=None):
