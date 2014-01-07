@@ -25,10 +25,12 @@ class MyDataScaler():
         self.minRange = miR
         self.maxRange = maR
         self.scaler =  preprocessing.MinMaxScaler(feature_range=(self.minRange, self.maxRange))
+        self.data = None
+        self.fit = True # if scaling training data, then fit
 
     def load_pickle(self,fname):
         # remove old data just in case
-        self.data = []
+        self.data = None
         # load new data, handle if any errors occur
         try:
             self.data = np.array(pickle.load(open(fname+".p","rb")))
@@ -64,25 +66,36 @@ class MyDataScaler():
             for thisEntry in self.mergedData:
                 myCSV.save(thisEntry)
             myCSV.close()
-            print "Saved csv file: "+myCSV.fname+".csv"
+            print "Saved csv file: "+myCSV.fname
         except Exception, err:
-            print "Error saving CSV file: "+myCSV.fname+".csv"
+            print "Error saving CSV file: "+myCSV.fname
             print err
 
     def save_libsvm(self, fname=None):
-        libsvmLog = MyLibsvmLogger(fname)
+        # save data, handle if any errors occur
+        try:
+            libsvmLog = MyLibsvmLogger(fname)
 
-        for thisEntry in self.mergedData:
-            libsvmLog.append(thisEntry)
+            for thisEntry in self.mergedData:
+                libsvmLog.append(thisEntry)
 
-        libsvmLog.save_and_close()
+            libsvmLog.save_and_close()
+            print "Saved txt file: "+fname+".txt"
+        except Exception, err:
+            print "Error saving txt file in libsvm format: "+fname+".txt"
+            print err
 
-    def scale(self,sfc = False):
+    def scale(self, sfc = False):
         self.scaleFirstCol = sfc
         # Sometimes the first column is the label of the sample,
         # if we don't want to scale it, pass in False
         cols = range(int(not self.scaleFirstCol),self.data.shape[1])
-        self.scaledData = self.scaler.fit_transform(self.data[:,cols])
+
+        if(self.fit):
+            self.scaledData = self.scaler.fit_transform(self.data[:,cols])
+        else:
+            self.scaledData = self.scaler.transform(self.data[:,cols])
+
         # the first column will be missing if we did not scale it
         if(not sfc):
             self.mergedData = self.merge(self.data, self.scaledData)
@@ -100,12 +113,16 @@ class MyDataScaler():
             myFile.write(str(self.minRange)+'\n')
             myFile.write(str(self.maxRange)+'\n')
             myFile.close()
+            print "Saved scaling parameters: "+fname+".txt"
         except Exception, err:
             print "Error saving parameters to: "+fname+".txt"
             print err
             
 
     def load_params(self, fname):
+        # if loading parameters, then don't fit
+        self.fit = False
+
         # open a txt file and read these values myMin, myScale
         # handle errors
         try:
@@ -119,6 +136,8 @@ class MyDataScaler():
             self.scaler.scale_ = myScale
             self.minRange = myMir
             self.maxRange = myMar
+
+            print "Loaded scaler parameters: "
 
             print "scaler.min_"
             print self.scaler.min_
